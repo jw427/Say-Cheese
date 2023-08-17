@@ -469,7 +469,12 @@ const CanvasArea = () => {
         });
     }
 
+    // 객체 추가 또는 수정 시 상태 저장
+
+    // canvasInstance.on("object:modified", handleObjectAdded);
+
     setCanvasInstance(newCanvas);
+    // 캔버스 객체 초기화
 
     return () => {
       // `newCanvas`가 유효한지 확인하고

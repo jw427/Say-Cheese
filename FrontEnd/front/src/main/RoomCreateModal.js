@@ -1,17 +1,22 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { setRoom } from "../redux/features/room/roomSlice";
 import axios from "axios";
 import "./RoomCreateModal.css";
 import ModalButtons from "./ModalButtons";
 import l_Frame from "./assets/ladder_shape.svg";
 import w_Frame from "./assets/window_shape.png";
+const accessToken = localStorage.getItem("accessToken");
 
 function RoomCreateModal({ open, close }) {
+  const dispatch = useDispatch();
   // 이동 위한 navigate 선언
   const navigate = useNavigate();
   // 모달 설정
   const [isComplete, setIsComplete] = useState(false);
 
+  const { userInfo } = useSelector((store) => store.login);
   // 방 설정들
   // 방 모드
   const [isModeActive, setIsModeActive] = useState(true);
@@ -23,6 +28,10 @@ function RoomCreateModal({ open, close }) {
   const [roomPassword, setRoomPassword] = useState("");
   // 방 코드
   const [roomCode, setRoomCode] = useState("");
+
+  if (!userInfo) {
+    close();
+  }
   async function codeCreation() {
     let isValid = false;
     while (!isValid) {
@@ -36,6 +45,7 @@ function RoomCreateModal({ open, close }) {
         }
       }
     }
+    // setRoomCode("sessionA");
   }
   async function isValidCode(code) {
     try {
@@ -46,25 +56,44 @@ function RoomCreateModal({ open, close }) {
       return false;
     }
   }
+  const checkAvailable = () => {
+    try {
+      const response = axios
+        .post(
+          "/api/room/check",
+          {},
+          {
+            headers: {
+              Authorization: `${localStorage.getItem("accessToken")}`,
+            },
+          }
+        )
+        .then(() => {
+          handleConfirm();
+        })
+        .catch((error) => {
+          alert(error.response.data.message);
+          console.log(error);
+        });
+    } catch (error) {
+      alert("비정상적 접근");
+      console.log(error);
+    }
+  };
+
   // 방 초대링크
   let roomInvite;
   // open이 아닐 때 출력 x
   if (!open) {
     return null;
   }
-  // 최종 제출
+  // 방 정보 제출
   const handleConfirm = () => {
-    console.log("## ## ## ## ## ## ## ");
-    console.log("방 모드(isModeActive): ", isModeActive);
-    console.log("방 인원(roomLimit): ", roomLimit);
-    console.log("방 프레임(isWindowFrame): ", isWindowFrame);
-    console.log("방 비밀번호(roomPassword): ", roomPassword);
-    console.log("## ## ## ## ## ## ## ");
     codeCreation();
     setIsComplete(true);
   };
 
-  const sendRoomData = async () => {
+  const sendRoomData = () => {
     let selectedMode;
     let selectedFrame;
     if (isModeActive === true) {
@@ -77,31 +106,20 @@ function RoomCreateModal({ open, close }) {
     } else {
       selectedFrame = "vertical";
     }
-    try {
-      console.log(roomPassword,roomLimit,selectedMode,roomCode,selectedFrame)
-      await axios.post(
-        "/api/room",
-        {
-          password: roomPassword,
-          maxCount: roomLimit,
-          mode: selectedMode,
-          // roomCode: "sessionC",
-          roomCode: roomCode,
-          specification: selectedFrame,
-        },
-        {
-          headers: {
-            Authorization: `Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJtZW1iZXJJZCI6IjEifQ.sV341CXOobH8-xNyjrm-DnJ8nHE8HWS2WgM44EdIp6kwhU2vdmqKcSzKHPsEn_OrDPz6UpBN4hIY5TjTa42Z3A`,
-            "Content-Type": "application/json;charset=UTF-8",
-          },
-        }
-      ).then((response) => {
-        console.log(response);
-        navigate(`/room/${roomCode}`);
+    dispatch(
+      setRoom({
+        password: roomPassword,
+        maxCount: roomLimit,
+        mode: selectedMode,
+        roomCode: roomCode,
+        specification: selectedFrame,
       })
-    } catch (error) {
-      console.log(error);
-    }
+    );
+    navigate(`/room/${roomCode}`);
+    // });
+    // } catch (error) {
+    // console.log(error);
+    // }
   };
 
   return (
@@ -110,33 +128,25 @@ function RoomCreateModal({ open, close }) {
         <div className="finish-create-modal-content">
           <h2>방 생성</h2>
           <div className="room-code">
-            <p>
-              <b>방 코드: </b>
-              <input
-                className={roomCode}
-                value={roomCode ? roomCode : "Sample Room Code"}
-                readOnly
-              />
-            </p>
+            <span>방 코드</span>
+            <input
+              id="createdCode"
+              className={roomCode}
+              value={roomCode ? roomCode : "Sample Room Code"}
+              readOnly
+            />
           </div>
           <div className="room-invite">
-            <p>
-              <b>방 초대 링크: </b>
-              <input
-                className={roomInvite}
-                value={
-                  roomInvite
-                    ? roomInvite
-                    : "www.sample.com/sample123/?sample456?/sample789?"
-                }
-                readOnly
-              />
-            </p>
+            <span>방 모드</span>
+            <input
+              className={roomInvite}
+              value={isModeActive ? "Game" : "Normal"}
+              id="inviteLink"
+              readOnly
+            />
           </div>
           <ModalButtons
             onConfirm={() => {
-              console.log("방 코드(roomCode): ", roomCode);
-              console.log("방 초대링크(roomInvite): ", roomInvite);
               sendRoomData();
               setIsComplete(false);
             }}
@@ -151,6 +161,7 @@ function RoomCreateModal({ open, close }) {
             <p>
               <label>
                 <input
+                  id="gameMode"
                   type="radio"
                   checked={isModeActive}
                   onChange={() => setIsModeActive(!isModeActive)}
@@ -159,6 +170,7 @@ function RoomCreateModal({ open, close }) {
               </label>
               <label>
                 <input
+                  id="normalMode"
                   type="radio"
                   checked={!isModeActive}
                   onChange={() => setIsModeActive(!isModeActive)}
@@ -215,7 +227,7 @@ function RoomCreateModal({ open, close }) {
           <div className="password-settings">
             <input
               type="password"
-              placeholder="비밀번호를 입력해주세요(선택)"
+              placeholder="비밀번호를 입력해주세요(필수)"
               value={roomPassword}
               onChange={(event) => {
                 setRoomPassword(event.target.value);
@@ -223,7 +235,12 @@ function RoomCreateModal({ open, close }) {
               maxLength={10}
             />
           </div>
-          <ModalButtons onConfirm={handleConfirm} onClose={close} />
+          <ModalButtons
+            onConfirm={() => {
+              checkAvailable();
+            }}
+            onClose={close}
+          />
         </div>
       )}
     </div>
