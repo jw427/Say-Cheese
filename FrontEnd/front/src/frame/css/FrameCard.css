@@ -8,13 +8,17 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  margin: 60px 60px 0 60px;
-
+  margin: 0 0 20px 10px;
   position: relative;
 }
 
-.frameCard:hover {
-  cursor: pointer;
+@media (min-width: 1262px) {
+  .frameSpace div:nth-child(1) {
+    margin: 0;
+  }
+  .frameSpace div:last-child(4n) {
+    margin: 0;
+  }
 }
 
 /* 프레임 카드 좋아요 */

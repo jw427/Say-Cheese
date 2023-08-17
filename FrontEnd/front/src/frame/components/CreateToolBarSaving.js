@@ -125,13 +125,10 @@ export default function Saving() {
   // 로그인 처리 함수 for  stage1
   function handleLogin(event) {
     event.preventDefault();
-    console.log(email, password);
     let data = {
       email: email,
       password: password,
     };
-
-    console.log(data);
 
     axios
       .post("/api/login", data, {
@@ -140,13 +137,10 @@ export default function Saving() {
         },
       })
       .then((response) => {
-        console.log(response);
         const accessToken = response.headers["authorization"];
         const refreshToken = response.headers["refreshtoken"];
 
         axios.defaults.headers.common["Authorization"] = `${accessToken}`;
-
-        console.log(axios.defaults.headers.common["Authorization"]);
 
         if (response.status === 200) {
           localStorage.setItem("accessToken", accessToken);
@@ -165,7 +159,7 @@ export default function Saving() {
       });
   }
   return (
-    <>
+    <div className="savingButton">
       <button
         className="btn alignCenter"
         onClick={() => dispatch(DoDownload())}
@@ -188,6 +182,6 @@ export default function Saving() {
         : uploadStage === 1
         ? stage1() // 로그인
         : null}
-    </>
+    </div>
   );
 }
